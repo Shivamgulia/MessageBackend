@@ -13,6 +13,9 @@ public interface UserService {
     User save(User user);
 
 
+    User findByUsername(String name);
+
+
     Optional<User> findByNumber(String number);
 
 }

@@ -8,8 +8,10 @@ import com.shivam.talk.entity.Otp;
 import com.shivam.talk.entity.User;
 import com.shivam.talk.service.OtpService;
 import com.shivam.talk.service.UserService;
+import com.shivam.talk.util.JWTUtil;
 import com.shivam.talk.util.OtpUtilService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -32,6 +34,9 @@ public class AuthController {
     @Autowired
     public OtpService  otpService;
 
+    @Autowired
+    public JWTUtil jwtUtil;
+
 
 
     @PostMapping("/generateotp")
@@ -52,7 +57,7 @@ public class AuthController {
 
             otpService.saveOtp(otpObj);
 
-            return "OTP Geenrated";
+            return "OTP Geenrated"  + otp;
 
         }
 
@@ -61,7 +66,7 @@ public class AuthController {
 
 
     @PostMapping("/verifyotp")
-    public String verifyOtp(@RequestBody VerifyOtpDTO verifyOtp) {
+    public ResponseEntity<String> verifyOtp(@RequestBody VerifyOtpDTO verifyOtp) {
 
         Optional<User> user = userService.findByNumber(verifyOtp.getPhoneNumber());
 
@@ -80,20 +85,23 @@ public class AuthController {
                     Long otpId =  1l *  otp.get().getId();
                     otpService.deleteOtp(otpId);
 
-                    return "OTP Verified";
+                    String jwt = jwtUtil.generateToken(user.get().getUsername());
+
+                    return ResponseEntity.ok(jwt);
                 }
 
-                return "Wrong OTP";
+
+                return ResponseEntity.status(401).body("Wrong OTP");
             }
 
-            return "Send OTP First";
+            return  ResponseEntity.status(400).body("Send OTP First");
 
         }
 
 
 
 
-        return "User Does Not Exist";
+        return ResponseEntity.status(404).body("User Does Not Exist");
     }
 
 
