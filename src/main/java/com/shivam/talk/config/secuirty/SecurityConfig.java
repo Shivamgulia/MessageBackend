@@ -26,6 +26,7 @@ public class SecurityConfig {
                 .csrf().disable()  // Disable CSRF protection
                 .authorizeRequests()
                 .requestMatchers("/api/v1/**").fullyAuthenticated()
+//                .requestMatchers("/ws/**").fullyAuthenticated()
                 .anyRequest().permitAll() // Permit all requests to all paths
                 .and().
         addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
