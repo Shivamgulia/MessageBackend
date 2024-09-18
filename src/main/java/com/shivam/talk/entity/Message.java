@@ -16,6 +16,6 @@ public class Message {
     private String receiverName;
     private String message;
     private String auth;
-    private String date;
+    private Date date;
     private Status status;
 }

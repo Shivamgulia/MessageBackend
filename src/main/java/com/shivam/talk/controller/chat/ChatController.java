@@ -2,6 +2,9 @@ package com.shivam.talk.controller.chat;
 
 
 import com.shivam.talk.entity.Message;
+import com.shivam.talk.entity.Status;
+import com.shivam.talk.entity.Text;
+import com.shivam.talk.service.TextService;
 import com.shivam.talk.service.UserService;
 import com.shivam.talk.util.JWTUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +18,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Controller
 public class ChatController {
 
@@ -22,12 +28,16 @@ public class ChatController {
     @Autowired
     private JWTUtil jwtUtil;
 
-
     @Autowired
     private UserService userService;
 
     @Autowired
     private SimpMessagingTemplate simpMessagingTemplate;
+
+    @Autowired
+    private TextService textService;
+
+
 
     @MessageMapping("/message")
     @SendTo("/chatroom/public")
@@ -38,17 +48,39 @@ public class ChatController {
     }
 
     @MessageMapping("/private-message")
-    public Message recMessage(@Payload Message message){
-
-
+    public List<Message> recMessage(@Payload Message message){
 
         if(validateUser(message.getAuth(), message.getSenderName())) {
 
+            if(message.getStatus() == Status.JOIN) {
+                //TODO getting all the messages that are not yet sent to user in absence
 
-        simpMessagingTemplate.convertAndSendToUser(message.getReceiverName(),"/private",message);
+                List<Text> unrecievedTexts = textService.findAllByRevieverAndReceivedTime(message.getReceiverName(), null);
+                List<Message> unrecievedMessages = new ArrayList<>();
+                for(Text unrecievedText : unrecievedTexts) {
+                    Message temp = new Message();
+                    temp.setMessage(unrecievedText.getText());
+                    temp.setSenderName(unrecievedText.getSender());
+                    temp.setReceiverName(unrecievedText.getReviever());
+                    temp.setStatus(Status.MESSAGE);
+                    temp.setDate(unrecievedText.getReceivedTime());
+                }
+                return unrecievedMessages;
 
-        System.out.println(message.toString());
-        return message;
+
+            }
+
+            if(message.getStatus() == Status.RECIPT) {
+                //TODO updating recieved as server
+
+            }
+
+            simpMessagingTemplate.convertAndSendToUser(message.getReceiverName(),"/private",message);
+            System.out.println(simpMessagingTemplate.getUserDestinationPrefix());
+            System.out.println(message.toString());
+            List<Message> messages = new ArrayList<>();
+            messages.add(message);
+            return messages;
         }
         return null;
     }
