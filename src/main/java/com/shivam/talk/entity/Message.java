@@ -12,6 +12,8 @@ import java.util.Date;
 @NoArgsConstructor
 @Data
 public class Message {
+
+    private long id;
     private String senderName;
     private String receiverName;
     private String message;

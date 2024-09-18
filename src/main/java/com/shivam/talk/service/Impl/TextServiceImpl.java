@@ -28,6 +28,12 @@ public class TextServiceImpl implements TextService {
         return textRepository.findAllByRevieverAndReceivedTime(reciever, receivedTime);
     }
 
+    @Override
+    public Text findById(Long id) {
+
+        return textRepository.findById(id).orElse(null);
+    }
+
 
     @Override
     public Text save(Text text) {

@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Controller;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Controller
@@ -48,39 +49,63 @@ public class ChatController {
     }
 
     @MessageMapping("/private-message")
-    public List<Message> recMessage(@Payload Message message){
+    public Message recMessage(@Payload Message message){
 
         if(validateUser(message.getAuth(), message.getSenderName())) {
 
             if(message.getStatus() == Status.JOIN) {
                 //TODO getting all the messages that are not yet sent to user in absence
 
-                List<Text> unrecievedTexts = textService.findAllByRevieverAndReceivedTime(message.getReceiverName(), null);
+//                List<Text> unrecievedTexts = textService.findAllByReciever(message.getSenderName());
+                List<Text> unrecievedTexts = textService.findAllByRevieverAndReceivedTime(message.getSenderName(), null);
+                System.out.println(unrecievedTexts + "unrecieved");
                 List<Message> unrecievedMessages = new ArrayList<>();
                 for(Text unrecievedText : unrecievedTexts) {
                     Message temp = new Message();
+                    temp.setId(unrecievedText.getId());
                     temp.setMessage(unrecievedText.getText());
                     temp.setSenderName(unrecievedText.getSender());
                     temp.setReceiverName(unrecievedText.getReviever());
                     temp.setStatus(Status.MESSAGE);
                     temp.setDate(unrecievedText.getReceivedTime());
+                    unrecievedMessages.add(temp);
+                    simpMessagingTemplate.convertAndSendToUser(message.getSenderName(),"/private",temp);
                 }
-                return unrecievedMessages;
 
+                System.out.println(unrecievedMessages);
+                return null;
 
             }
 
             if(message.getStatus() == Status.RECIPT) {
                 //TODO updating recieved as server
 
+                Text temp = new Text();
+                temp = textService.findById(message.getId());
+                temp.setReceivedTime(new Date());
+                System.out.println(temp);
+                textService.save(temp);
+
             }
 
-            simpMessagingTemplate.convertAndSendToUser(message.getReceiverName(),"/private",message);
-            System.out.println(simpMessagingTemplate.getUserDestinationPrefix());
-            System.out.println(message.toString());
-            List<Message> messages = new ArrayList<>();
-            messages.add(message);
-            return messages;
+
+            if(message.getStatus() == Status.MESSAGE) {
+                Text text = new Text();
+                text.setText(message.getMessage());
+                text.setSender(message.getSenderName());
+                text.setReviever(message.getReceiverName());
+                text.setReceivedTime(message.getDate());
+
+                textService.save(text);
+
+
+                simpMessagingTemplate.convertAndSendToUser(message.getReceiverName(),"/private",message);
+                System.out.println(message.toString());
+                return message;
+            }
+
+            return null;
+
         }
         return null;
     }
@@ -93,9 +118,13 @@ public class ChatController {
         if (auth != null && auth.startsWith("Bearer ")) {
             jwt = auth.substring(7);
             username = jwtUtil.extractUsername(jwt);
+
+            System.out.println(username);
         }
+
         if (username != null) {
             UserDetails userDetails = userService.findByUsername(username);
+            System.out.println(userDetails.getUsername() + "user");
             if (jwtUtil.validateToken(jwt)) {
                 if(userDetails.getUsername().equals(senderName)) {
                     return true;
